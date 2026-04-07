@@ -15,7 +15,9 @@
 =============================================================
 """
 
+from PIL import Image, ImageTk
 import customtkinter as ctk
+import tkinter as tk
 from tkinter import messagebox
 import smtplib
 import os
@@ -52,9 +54,15 @@ from reportlab.lib import colors
 #
 #   3. Preencha as três linhas abaixo:
 #
-EMAIL_REMETENTE = "diogomonarifigueiredo@gmail.com"
-SENHA_APP       = "jkuo fyta wkek nied"
-EMAIL_DESTINO   = "00001136803853sp@aluno.educacao.sp.gov.br"
+EMAIL_REMETENTE = "ocorrenciasjpii@gmail.com"
+SENHA_APP       = "rnkx nbgp hfwl isyn"
+EMAIL_DESTINO   = "e038453p@educacao.sp.gov.br"
+
+# ─────────────────────────────────────────────
+#   CONFIGURAÇÕES DO WHATSAPP 
+# ─────────────────────────────────────────────
+
+WHATSAPP_NUMERO = "11956877435"
 # ─────────────────────────────────────────────
 
 # Logo SP oficial (embutido)
@@ -63,10 +71,10 @@ LOGO_SP_B64 = "iVBORw0KGgoAAAANSUhEUgAAANUAAABGCAIAAADU0EY5AAAnR0lEQVR4nO19eXxN1
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
-
 # ══════════════════════════════════════════════
 #   GERADOR DE PDF
 # ══════════════════════════════════════════════
+
 def gerar_pdf(dados: dict) -> str:
     aluno_nome = dados["aluno"].replace(" ", "_")
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -88,8 +96,6 @@ def gerar_pdf(dados: dict) -> str:
             c.drawString(x, y, texto)
 
     # ── Cabeçalho — logo oficial + textos ────────
-    from PIL import Image as PilImage
-    import io as _io
 
     # Fundo branco
     c.setFillColor(colors.white)
@@ -102,7 +108,7 @@ def gerar_pdf(dados: dict) -> str:
     # Logo SP embutido
     try:
         img_bytes = _b64.b64decode(LOGO_SP_B64)
-        pil_img   = PilImage.open(_io.BytesIO(img_bytes))
+        pil_img   = Image.open(io.BytesIO(img_bytes))
         # Salvar temporariamente para o ReportLab carregar
         _tmp = os.path.join(tempfile.gettempdir(), "_logo_sp_tmp.png")
         pil_img.save(_tmp)
@@ -357,7 +363,7 @@ class App(ctk.CTk):
     def _scroll_mouse(self, event):
         """Redireciona scroll do mouse para o CTkScrollableFrame."""
         try:
-            scroll_units = int(-1 * (event.delta / 120)) * 4
+            scroll_units = int(-1 * (event.delta / 120)) * 32
             self.scroll._parent_canvas.yview_scroll(scroll_units, "units")
         except Exception:
             pass
@@ -390,8 +396,6 @@ class App(ctk.CTk):
         self.scroll.pack(fill="both", expand=True, padx=0, pady=0)
 
         # ── Cabeçalho — fiel ao papel oficial ──────
-        import tkinter as tk
-        from PIL import Image, ImageTk
         cab = ctk.CTkFrame(self.scroll, fg_color="white", corner_radius=0)
         cab.pack(fill="x", padx=0, pady=(0, 14))
 
@@ -495,7 +499,7 @@ class App(ctk.CTk):
         self.entry_pag_ata     = self._campo(f_fin, "Nº da Pág. do Ata:", 44)
         self.entry_atendida    = self._campo(f_fin, "Atendido por:", 170)
         self.entry_ciencia     = self._campo(f_fin, "Ciência do Responsável:", 170)
-        self.entry_whatsapp    = self._campo(f_fin, "Whatsapp Escolar:", 96, "11956877435")
+        self.entry_whatsapp    = self._campo(f_fin, "Whatsapp Escolar:", 96, WHATSAPP_NUMERO)
         self.entry_whatsapp.configure(state="readonly")
 
         # ── Botão ────────────────────────────────
