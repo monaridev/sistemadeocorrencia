@@ -104,6 +104,17 @@ LOGO_SP_B64 = "iVBORw0KGgoAAAANSUhEUgAAANUAAABGCAIAAADU0EY5AAAnR0lEQVR4nO19eXxN1
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
+# ── Paleta de cores ──────
+COR_PRIMARIA    = "#0A2C5E"   # azul SP escuro
+COR_ACENTO      = "#C8102E"   # vermelho SP
+COR_FUNDO       = "#F0F2F5"   # cinza claro de fundo
+COR_CARD        = "#FFFFFF"   # branco dos cards
+COR_BORDA       = "#D8DCE6"   # borda suave
+COR_TEXTO       = "#1A1F2E"   # texto principal
+COR_SUBTEXTO    = "#5A6478"   # texto secundário
+COR_HOVER       = "#1A4A8A"   # hover dos botões
+COR_CHECK_OK    = "#0A7C3A"   # verde ao marcar
+
 
 # ══════════════════════════════════════════════
 #   GERADOR DE PDF
@@ -374,20 +385,20 @@ def enviar_whatsapp(numero: str, caminho_pdf: str, aluno: str) -> bool:
 
 
 # ══════════════════════════════════════════════
-#   INTERFACE GRÁFICA (CustomTkinter)
+#   INTERFACE GRÁFICA 
 # ══════════════════════════════════════════════
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Ficha de Ocorrência Disciplinar — E.E. João Paulo II")
-        self.geometry("720x900")
+        self.geometry("820x920")
+        self.minsize(700, 600)
         self.resizable(True, True)
+        self.configure(fg_color=COR_FUNDO)
         self._build_ui()
-        # Correção de scroll do mouse no CTkScrollableFrame
         self.bind_all("<MouseWheel>", self._scroll_mouse)
 
     def _scroll_mouse(self, event):
-        """Redireciona scroll do mouse para o CTkScrollableFrame."""
         try:
             scroll_units = int(-1 * (event.delta / 120)) * 35
             self.scroll._parent_canvas.yview_scroll(scroll_units, "units")
@@ -395,127 +406,425 @@ class App(ctk.CTk):
             pass
 
     # ── Helpers de layout ──────────────────────
-    def _secao(self, pai, titulo: str) -> ctk.CTkFrame:
-        frame = ctk.CTkFrame(pai, corner_radius=10)
-        frame.pack(fill="x", padx=18, pady=(0, 10))
-        ctk.CTkLabel(frame, text=titulo, font=ctk.CTkFont(size=12, weight="bold"),
-                     text_color="#0A2C5E").pack(anchor="w", padx=14, pady=(10, 4))
-        return frame
+    def _card(self, pai, titulo: str, icone: str = "") -> ctk.CTkFrame:
+        """Cria um card moderno com título e linha divisória colorida."""
+        wrapper = ctk.CTkFrame(pai, corner_radius=14, fg_color=COR_CARD,
+                               border_width=1, border_color=COR_BORDA)
+        wrapper.pack(fill="x", padx=20, pady=(0, 14))
 
-    def _campo(self, pai, rotulo: str, largura: int = 300, valor_padrao: str = "") -> ctk.CTkEntry:
-        linha = ctk.CTkFrame(pai, fg_color="transparent")
-        linha.pack(fill="x", padx=14, pady=3)
-        ctk.CTkLabel(linha, text=rotulo, width=160, anchor="w").pack(side="left")
-        entry = ctk.CTkEntry(linha, width=largura)
+        # Faixa superior colorida
+        topo = ctk.CTkFrame(wrapper, fg_color=COR_PRIMARIA, corner_radius=0, height=4)
+        topo.pack(fill="x")
+        # Correção para os cantos superiores
+        topo_inner = tk.Frame(wrapper, bg=COR_PRIMARIA, height=8)
+        topo_inner.pack(fill="x")
+
+        cab = ctk.CTkFrame(wrapper, fg_color="transparent")
+        cab.pack(fill="x", padx=18, pady=(10, 6))
+
+        if icone:
+            ctk.CTkLabel(cab, text=icone, font=ctk.CTkFont(size=18),
+                         text_color=COR_PRIMARIA, width=30).pack(side="left", padx=(0, 8))
+
+        ctk.CTkLabel(cab, text=titulo,
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color=COR_PRIMARIA).pack(side="left")
+
+        # Linha divisória sutil
+        tk.Frame(wrapper, bg=COR_BORDA, height=1).pack(fill="x", padx=18, pady=(0, 12))
+
+        return wrapper
+
+    def _campo(self, pai, rotulo: str, largura: int = 300, valor_padrao: str = "",
+               placeholder: str = "") -> ctk.CTkEntry:
+        """Campo de entrada com rótulo elegante acima."""
+        bloco = ctk.CTkFrame(pai, fg_color="transparent")
+        bloco.pack(fill="x", padx=18, pady=(0, 10))
+
+        ctk.CTkLabel(bloco, text=rotulo,
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+
+        entry = ctk.CTkEntry(bloco,
+                             width=largura,
+                             height=36,
+                             corner_radius=8,
+                             border_width=1,
+                             border_color=COR_BORDA,
+                             fg_color="#F8F9FC",
+                             text_color=COR_TEXTO,
+                             placeholder_text=placeholder,
+                             font=ctk.CTkFont(size=12))
         entry.insert(0, valor_padrao)
-        entry.pack(side="left")
+        entry.pack(anchor="w")
+
+        # Efeito de foco: muda borda ao entrar/sair
+        entry.bind("<FocusIn>",  lambda e: entry.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        entry.bind("<FocusOut>", lambda e: entry.configure(border_color=COR_BORDA,   fg_color="#F8F9FC"))
+
         return entry
+
+    def _campo_linha(self, pai, rotulo: str, largura: int = 220, valor_padrao: str = "",
+                     placeholder: str = "") -> ctk.CTkEntry:
+        """Campo compacto lado a lado (para grids de 2 colunas)."""
+        bloco = ctk.CTkFrame(pai, fg_color="transparent")
+        bloco.pack(side="left", fill="x", expand=True, padx=(0, 12))
+
+        ctk.CTkLabel(bloco, text=rotulo,
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+
+        entry = ctk.CTkEntry(bloco,
+                             height=36,
+                             corner_radius=8,
+                             border_width=1,
+                             border_color=COR_BORDA,
+                             fg_color="#F8F9FC",
+                             text_color=COR_TEXTO,
+                             placeholder_text=placeholder,
+                             font=ctk.CTkFont(size=12))
+        entry.insert(0, valor_padrao)
+        entry.pack(fill="x")
+
+        entry.bind("<FocusIn>",  lambda e: entry.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        entry.bind("<FocusOut>", lambda e: entry.configure(border_color=COR_BORDA,   fg_color="#F8F9FC"))
+
+        return entry
+
+    def _checkbox_moderno(self, pai, texto: str, var: tk.BooleanVar):
+        """Checkbox com visual moderno e feedback de cor."""
+        linha = ctk.CTkFrame(pai, fg_color="transparent", corner_radius=8)
+        linha.pack(fill="x", padx=18, pady=2)
+
+        cb = ctk.CTkCheckBox(
+            linha,
+            text=texto,
+            variable=var,
+            font=ctk.CTkFont(size=12),
+            text_color=COR_TEXTO,
+            fg_color=COR_CHECK_OK,
+            hover_color=COR_PRIMARIA,
+            border_color=COR_BORDA,
+            border_width=2,
+            checkmark_color="white",
+            corner_radius=5,
+        )
+        cb.pack(anchor="w", padx=6, pady=2)
+
+        # Destaca fundo da linha ao marcar
+        def _atualizar(*_):
+            if var.get():
+                linha.configure(fg_color="#EEF6F1")
+                cb.configure(text_color=COR_CHECK_OK)
+            else:
+                linha.configure(fg_color="transparent")
+                cb.configure(text_color=COR_TEXTO)
+
+        var.trace_add("write", _atualizar)
+        return cb
 
     # ── Construção da UI ───────────────────────
     def _build_ui(self):
-        # Scroll externo
-        self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0)
+        # ── Topo fixo com identidade visual ─────────────────
+        header = tk.Frame(self, bg=COR_PRIMARIA, height=72)
+        header.pack(fill="x", side="top")
+        header.pack_propagate(False)
+
+        inner_h = tk.Frame(header, bg=COR_PRIMARIA)
+        inner_h.pack(fill="both", expand=True, padx=24, pady=0)
+
+        # Logo SP no header
+        try:
+            img_data    = _b64.b64decode(LOGO_SP_B64)
+            pil_img     = Image.open(io.BytesIO(img_data))
+            # Redimensiona para caber no header
+            h_logo = 46
+            w_logo = int(h_logo * pil_img.width / pil_img.height)
+            pil_img_r   = pil_img.resize((w_logo, h_logo), Image.LANCZOS)
+            self._logo_img = ImageTk.PhotoImage(pil_img_r)
+            tk.Label(inner_h, image=self._logo_img, bg=COR_PRIMARIA,
+                     borderwidth=0).pack(side="left", pady=13)
+        except Exception:
+            pass
+
+        # Texto do header
+        txt_h = tk.Frame(inner_h, bg=COR_PRIMARIA)
+        txt_h.pack(side="left", padx=14, pady=10)
+
+        tk.Label(txt_h, text="E.E. JOÃO PAULO II",
+                 font=("Segoe UI", 15, "bold"),
+                 bg=COR_PRIMARIA, fg="white").pack(anchor="w")
+        tk.Label(txt_h, text="Ficha de Ocorrência Disciplinar  ·  Mauá – SP",
+                 font=("Segoe UI", 9),
+                 bg=COR_PRIMARIA, fg="#A8C4E8").pack(anchor="w")
+
+        # Pill de status no canto direito
+        self._status_var = tk.StringVar(value="● Pronto para preencher")
+        self._status_lbl = tk.Label(inner_h,
+                                    textvariable=self._status_var,
+                                    font=("Segoe UI", 9),
+                                    bg=COR_PRIMARIA, fg="#6DBFFF")
+        self._status_lbl.pack(side="right", pady=10)
+
+        # ── Faixa vermelha decorativa ─────────────────────────
+        tk.Frame(self, bg=COR_ACENTO, height=3).pack(fill="x")
+
+        # ── Área rolável ─────────────────────────────────────
+        self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0,
+                                             fg_color=COR_FUNDO,
+                                             scrollbar_button_color=COR_BORDA,
+                                             scrollbar_button_hover_color=COR_PRIMARIA)
         self.scroll.pack(fill="both", expand=True, padx=0, pady=0)
 
-        # ── Cabeçalho — fiel ao papel oficial ──────
+        # Espaço superior
+        tk.Frame(self.scroll, bg=COR_FUNDO, height=16).pack(fill="x")
 
-        cab = ctk.CTkFrame(self.scroll, fg_color="white", corner_radius=0)
-        cab.pack(fill="x", padx=0, pady=(0, 14))
+        # ══ 1. CARD — Identificação ══════════════════════════
+        c_id = self._card(self.scroll, "Registro do Aluno", "📋")
 
-        topo = ctk.CTkFrame(cab, fg_color="white", corner_radius=0)
-        topo.pack(fill="x", padx=18, pady=(14, 4))
+        # Grid de 2 colunas para nome + série
+        row1 = ctk.CTkFrame(c_id, fg_color="transparent")
+        row1.pack(fill="x", padx=18, pady=(0, 0))
 
-        # Logo SP — imagem oficial embutida
-        try:
-            img_data = _b64.b64decode(LOGO_SP_B64)
-            pil_img  = Image.open(io.BytesIO(img_data))
-            self._logo_img = ImageTk.PhotoImage(pil_img)
-            tk.Label(topo, image=self._logo_img, bg="white",
-                     borderwidth=0).pack(side="left", padx=(0, 14))
-        except Exception:
-            pass  # se falhar, segue sem logo
-
-        textos = ctk.CTkFrame(topo, fg_color="white", corner_radius=0)
-        textos.pack(side="left", fill="x", expand=True)
-        ctk.CTkLabel(textos, text="SECRETARIA DE ESTADO DA EDUCAÇÃO",
+        frame_nome = ctk.CTkFrame(row1, fg_color="transparent")
+        frame_nome.pack(side="left", fill="x", expand=True, padx=(0, 12))
+        ctk.CTkLabel(frame_nome, text="Nome do Aluno",
                      font=ctk.CTkFont(size=11, weight="bold"),
-                     text_color="#1A1A1A", anchor="w").pack(anchor="w")
-        ctk.CTkLabel(textos, text="UNIDADE REGIONAL DE ENSINO DE MAUÁ",
-                     font=ctk.CTkFont(size=10, weight="bold"),
-                     text_color="#1A1A1A", anchor="w").pack(anchor="w")
-        ctk.CTkLabel(textos, text="ESCOLA ESTADUAL E.E. JOÃO PAULO II",
-                     font=ctk.CTkFont(size=10),
-                     text_color="#333333", anchor="w").pack(anchor="w")
-        ctk.CTkLabel(textos,
-                     text="Rua Barnabé Costa, 57 – Campo Verde – Mauá – SP – CEP 09320-015",
-                     font=ctk.CTkFont(size=8), text_color="#555555", anchor="w").pack(anchor="w")
-        ctk.CTkLabel(textos,
-                     text="Fone: (11) 4514-7259  –  E-mail: e038453a@educacao.sp.gov.br",
-                     font=ctk.CTkFont(size=8), text_color="#555555", anchor="w").pack(anchor="w")
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_aluno = ctk.CTkEntry(frame_nome, height=36, corner_radius=8,
+                                        border_width=1, border_color=COR_BORDA,
+                                        fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                        placeholder_text="Nome completo do aluno",
+                                        font=ctk.CTkFont(size=12))
+        self.entry_aluno.pack(fill="x")
+        self.entry_aluno.bind("<FocusIn>",  lambda e: self.entry_aluno.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_aluno.bind("<FocusOut>", lambda e: self.entry_aluno.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
 
-        sep = tk.Frame(cab, bg="#CCCCCC", height=1)
-        sep.pack(fill="x", padx=18, pady=(6, 0))
+        frame_serie = ctk.CTkFrame(row1, fg_color="transparent")
+        frame_serie.pack(side="left", padx=(0, 0))
+        ctk.CTkLabel(frame_serie, text="Série / Turma",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_serie = ctk.CTkEntry(frame_serie, width=110, height=36, corner_radius=8,
+                                         border_width=1, border_color=COR_BORDA,
+                                         fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                         placeholder_text="Ex: 3ºA",
+                                         font=ctk.CTkFont(size=12))
+        self.entry_serie.pack(anchor="w")
+        self.entry_serie.bind("<FocusIn>",  lambda e: self.entry_serie.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_serie.bind("<FocusOut>", lambda e: self.entry_serie.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
 
-        ctk.CTkLabel(cab, text="FICHA DE OCORRÊNCIA DISCIPLINAR",
-                     font=ctk.CTkFont(size=13, weight="bold"),
-                     text_color="#1A1A1A").pack(pady=(8, 14))
+        # Grid de 2 colunas para data + relatado
+        row2 = ctk.CTkFrame(c_id, fg_color="transparent")
+        row2.pack(fill="x", padx=18, pady=(10, 14))
 
-        # ── 1. Identificação ─────────────────────
-        f_id = self._secao(self.scroll, " [ 📁 ]  Registro  ")
-        self.entry_aluno       = self._campo(f_id, "Nome do Aluno:", 300)
-        self.entry_serie       = self._campo(f_id, "Série / Turma:", 100)
-        self.entry_data        = self._campo(f_id, "Data:", 120,
-                                             datetime.now().strftime("%d/%m/%Y"))
-        self.entry_relatado    = self._campo(f_id, "Relatado por:", 260)
+        frame_data = ctk.CTkFrame(row2, fg_color="transparent")
+        frame_data.pack(side="left", padx=(0, 12))
+        ctk.CTkLabel(frame_data, text="Data",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_data = ctk.CTkEntry(frame_data, width=130, height=36, corner_radius=8,
+                                        border_width=1, border_color=COR_BORDA,
+                                        fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                        font=ctk.CTkFont(size=12))
+        self.entry_data.insert(0, datetime.now().strftime("%d/%m/%Y"))
+        self.entry_data.pack(anchor="w")
+        self.entry_data.bind("<FocusIn>",  lambda e: self.entry_data.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_data.bind("<FocusOut>", lambda e: self.entry_data.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
 
-        # ── 2. Ocorrências ───────────────────────
-        f_oc = self._secao(self.scroll, " [ 📝 ]  Motivo da Ocorrência  ")
+        frame_rel = ctk.CTkFrame(row2, fg_color="transparent")
+        frame_rel.pack(side="left", fill="x", expand=True)
+        ctk.CTkLabel(frame_rel, text="Relatado por",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_relatado = ctk.CTkEntry(frame_rel, height=36, corner_radius=8,
+                                            border_width=1, border_color=COR_BORDA,
+                                            fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                            placeholder_text="Nome do professor(a)",
+                                            font=ctk.CTkFont(size=12))
+        self.entry_relatado.pack(fill="x")
+        self.entry_relatado.bind("<FocusIn>",  lambda e: self.entry_relatado.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_relatado.bind("<FocusOut>", lambda e: self.entry_relatado.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
+
+        # ══ 2. CARD — Motivo da Ocorrência ══════════════════
+        c_oc = self._card(self.scroll, "Motivo da Ocorrência", "⚠️")
+
         self.vars_oc = {}
-        _fonte_check = ctk.CTkFont(size=12)   # fonte criada UMA vez, reaproveitada em todos os checkboxes
         for chave, texto in OCORRENCIAS:
             v = ctk.BooleanVar()
             self.vars_oc[chave] = v
-            ctk.CTkCheckBox(f_oc, text=texto, variable=v, font=_fonte_check).pack(anchor="w", padx=22, pady=2)
+            self._checkbox_moderno(c_oc, texto, v)
 
-        # campo "Outra" descrição
-        linha_outra = ctk.CTkFrame(f_oc, fg_color="transparent")
-        linha_outra.pack(fill="x", padx=30, pady=(0, 8))
-        ctk.CTkLabel(linha_outra, text="  Descrever 'Outro':", width=160, anchor="w").pack(side="left")
-        self.entry_outra = ctk.CTkEntry(linha_outra, width=350)
-        self.entry_outra.pack(side="left")
+        # Campo "Outra descrição"
+        sep_outra = ctk.CTkFrame(c_oc, fg_color=COR_BORDA, height=1)
+        sep_outra.pack(fill="x", padx=18, pady=(8, 10))
 
-        # ── 3. Relato ────────────────────────────
-        f_rel = self._secao(self.scroll, " [ 🗂 ]  Relatório da Ocorrência  ")
-        self.text_relato = ctk.CTkTextbox(f_rel, height=110, corner_radius=6)
-        self.text_relato.pack(fill="x", padx=14, pady=(0, 10))
+        bloco_outra = ctk.CTkFrame(c_oc, fg_color="transparent")
+        bloco_outra.pack(fill="x", padx=18, pady=(0, 14))
+        ctk.CTkLabel(bloco_outra, text="Descrição para 'Outro'",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_outra = ctk.CTkEntry(bloco_outra, height=36, corner_radius=8,
+                                         border_width=1, border_color=COR_BORDA,
+                                         fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                         placeholder_text="Descreva o motivo 'Outro' aqui...",
+                                         font=ctk.CTkFont(size=12))
+        self.entry_outra.pack(fill="x")
+        self.entry_outra.bind("<FocusIn>",  lambda e: self.entry_outra.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_outra.bind("<FocusOut>", lambda e: self.entry_outra.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
 
-        # ── 4. Providências ──────────────────────
-        f_pv = self._secao(self.scroll, " [ 📠 ]  Providência tomada ( Equipe Gestora )  ")
+        # ══ 3. CARD — Relato ═════════════════════════════════
+        c_rel = self._card(self.scroll, "Relatório da Ocorrência", "📝")
+
+        ctk.CTkLabel(c_rel, text="Descreva detalhadamente o ocorrido",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", padx=18, pady=(0, 4))
+
+        self.text_relato = ctk.CTkTextbox(c_rel,
+                                           height=120,
+                                           corner_radius=8,
+                                           border_width=1,
+                                           border_color=COR_BORDA,
+                                           fg_color="#F8F9FC",
+                                           text_color=COR_TEXTO,
+                                           font=ctk.CTkFont(size=12),
+                                           wrap="word")
+        self.text_relato.pack(fill="x", padx=18, pady=(0, 6))
+
+        # Rodapé do relato: aviso + contador de caracteres lado a lado
+        rodape_rel = ctk.CTkFrame(c_rel, fg_color="transparent")
+        rodape_rel.pack(fill="x", padx=18, pady=(0, 14))
+
+        ctk.CTkLabel(rodape_rel,
+                     text="⚠  Máximo de 400 caracteres no PDF.",
+                     font=ctk.CTkFont(size=10),
+                     text_color="#E07B00",
+                     anchor="w").pack(side="left")
+
+        self._contador_var = tk.StringVar(value="0 / 400")
+        self._contador_lbl = ctk.CTkLabel(rodape_rel,
+                                           textvariable=self._contador_var,
+                                           font=ctk.CTkFont(size=10, weight="bold"),
+                                           text_color=COR_SUBTEXTO,
+                                           anchor="e")
+        self._contador_lbl.pack(side="right")
+
+        # Atualiza o contador a cada tecla digitada no textbox
+        self.text_relato._textbox.bind("<KeyRelease>", self._atualizar_contador)
+        self.text_relato._textbox.bind("<<Paste>>",    self._atualizar_contador)
+
+        # ══ 4. CARD — Providências ════════════════════════════
+        c_pv = self._card(self.scroll, "Providência Tomada — Equipe Gestora", "📋")
+
         self.vars_pv = {}
         for chave, texto in PROVIDENCIAS:
             v = ctk.BooleanVar()
             self.vars_pv[chave] = v
-            ctk.CTkCheckBox(f_pv, text=texto, variable=v, font=_fonte_check).pack(anchor="w", padx=22, pady=2)
+            self._checkbox_moderno(c_pv, texto, v)
 
-        # ── 5. Campos finais ─────────────────────
-        f_fin = self._secao(self.scroll, " [ 📂 ]  Registro Final ( Equipe Gestora )  ")
-        self.entry_pag_ata     = self._campo(f_fin, "Nº da Pág. do Ata:", 44)
-        self.entry_atendida    = self._campo(f_fin, "Atendido por:", 170)
-        self.entry_ciencia     = self._campo(f_fin, "Ciência do Responsável:", 170)
-        self.entry_whatsapp    = self._campo(f_fin, "Whatsapp Escolar:", 96, WHATSAPP_ESCOLAR)
+        tk.Frame(c_pv, bg=COR_FUNDO, height=8).pack()
+
+        # ══ 5. CARD — Registro Final ══════════════════════════
+        c_fin = self._card(self.scroll, "Registro Final — Equipe Gestora", "🗂️")
+
+        row_fin1 = ctk.CTkFrame(c_fin, fg_color="transparent")
+        row_fin1.pack(fill="x", padx=18, pady=(0, 10))
+
+        # Pág. do Ata
+        bloco_pag = ctk.CTkFrame(row_fin1, fg_color="transparent")
+        bloco_pag.pack(side="left", padx=(0, 12))
+        ctk.CTkLabel(bloco_pag, text="Nº da Pág. do Ata",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_pag_ata = ctk.CTkEntry(bloco_pag, width=80, height=36, corner_radius=8,
+                                           border_width=1, border_color=COR_BORDA,
+                                           fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                           font=ctk.CTkFont(size=12))
+        self.entry_pag_ata.pack(anchor="w")
+        self.entry_pag_ata.bind("<FocusIn>",  lambda e: self.entry_pag_ata.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_pag_ata.bind("<FocusOut>", lambda e: self.entry_pag_ata.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
+
+        # Atendida por
+        bloco_atend = ctk.CTkFrame(row_fin1, fg_color="transparent")
+        bloco_atend.pack(side="left", fill="x", expand=True)
+        ctk.CTkLabel(bloco_atend, text="Ocorrência Atendida por",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_atendida = ctk.CTkEntry(bloco_atend, height=36, corner_radius=8,
+                                            border_width=1, border_color=COR_BORDA,
+                                            fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                            placeholder_text="Nome do gestor responsável",
+                                            font=ctk.CTkFont(size=12))
+        self.entry_atendida.pack(fill="x")
+        self.entry_atendida.bind("<FocusIn>",  lambda e: self.entry_atendida.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_atendida.bind("<FocusOut>", lambda e: self.entry_atendida.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
+
+        row_fin2 = ctk.CTkFrame(c_fin, fg_color="transparent")
+        row_fin2.pack(fill="x", padx=18, pady=(0, 14))
+
+        # Ciência do Responsável
+        bloco_cien = ctk.CTkFrame(row_fin2, fg_color="transparent")
+        bloco_cien.pack(side="left", fill="x", expand=True, padx=(0, 12))
+        ctk.CTkLabel(bloco_cien, text="Ciência do Responsável",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_ciencia = ctk.CTkEntry(bloco_cien, height=36, corner_radius=8,
+                                           border_width=1, border_color=COR_BORDA,
+                                           fg_color="#F8F9FC", text_color=COR_TEXTO,
+                                           placeholder_text="Nome do responsável",
+                                           font=ctk.CTkFont(size=12))
+        self.entry_ciencia.pack(fill="x")
+        self.entry_ciencia.bind("<FocusIn>",  lambda e: self.entry_ciencia.configure(border_color=COR_PRIMARIA, fg_color="white"))
+        self.entry_ciencia.bind("<FocusOut>", lambda e: self.entry_ciencia.configure(border_color=COR_BORDA, fg_color="#F8F9FC"))
+
+        # WhatsApp — somente leitura
+        bloco_wp = ctk.CTkFrame(row_fin2, fg_color="transparent")
+        bloco_wp.pack(side="left")
+        ctk.CTkLabel(bloco_wp, text="WhatsApp Escolar",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color=COR_SUBTEXTO, anchor="w").pack(anchor="w", pady=(0, 3))
+        self.entry_whatsapp = ctk.CTkEntry(bloco_wp, width=140, height=36, corner_radius=8,
+                                            border_width=1, border_color=COR_BORDA,
+                                            fg_color="#EDEFF4", text_color=COR_SUBTEXTO,
+                                            font=ctk.CTkFont(size=12))
+        self.entry_whatsapp.insert(0, WHATSAPP_ESCOLAR)
         self.entry_whatsapp.configure(state="readonly")
+        self.entry_whatsapp.pack(anchor="w")
 
-        # ── Botão ────────────────────────────────
-        ctk.CTkButton(
-            self.scroll,
-            text="CLIQUE PARA GERAR PDF ( 🗃 )",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=48,
-            corner_radius=10,
-            fg_color="#28364A",
-            hover_color="#323C61",
-            command=self._confirmar_e_enviar
-        ).pack(padx=18, pady=16)
+        # ══ BOTÃO DE GERAÇÃO ══════════════════════════════════
+        btn_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=20, pady=(4, 6))
+
+        self.btn_gerar = ctk.CTkButton(
+            btn_frame,
+            text="🗃   Gerar PDF e Enviar",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=52,
+            corner_radius=12,
+            fg_color=COR_PRIMARIA,
+            hover_color=COR_HOVER,
+            text_color="white",
+            command=self._confirmar_e_enviar,
+        )
+        self.btn_gerar.pack(fill="x")
+
+        # Rodapé sutil
+        ctk.CTkLabel(self.scroll,
+                     text="E.E. João Paulo II  ·  Rua Barnabé Costa, 57 — Campo Verde, Mauá/SP  ·  e038453a@educacao.sp.gov.br",
+                     font=ctk.CTkFont(size=9),
+                     text_color=COR_SUBTEXTO).pack(pady=(6, 18))
+
+    # ── Contador de caracteres do relato ───────
+    def _atualizar_contador(self, event=None):
+        texto = self.text_relato.get("1.0", "end-1c")
+        total = len(texto)
+        self._contador_var.set(f"{total} / 400")
+        if total > 400:
+            self._contador_lbl.configure(text_color=COR_ACENTO)
+        elif total > 320:
+            self._contador_lbl.configure(text_color="#E07B00")
+        else:
+            self._contador_lbl.configure(text_color=COR_SUBTEXTO)
 
     # ── Ação do botão ──────────────────────────
     def _confirmar_e_enviar(self):
@@ -552,6 +861,11 @@ class App(ctk.CTk):
         if not resposta:
             return
 
+        # Feedback visual — processando
+        self.btn_gerar.configure(text="⏳  Gerando PDF...", state="disabled", fg_color="#5A7AA8")
+        self._status_var.set("● Gerando documento...")
+        self.update_idletasks()
+
         dados = {
             "aluno":        aluno,
             "serie":        serie,
@@ -571,27 +885,41 @@ class App(ctk.CTk):
             pdf_path = gerar_pdf(dados)
         except Exception as e:
             messagebox.showerror("Erro ao gerar PDF", str(e))
+            self.btn_gerar.configure(text="🗃   Gerar PDF e Enviar", state="normal", fg_color=COR_PRIMARIA)
+            self._status_var.set("● Erro ao gerar PDF")
             return
 
+        self._status_var.set("● Enviando e-mail...")
+        self.update_idletasks()
+
         ok = enviar_email(pdf_path, aluno, dados["data"])
-        
+
         if ok:
             # 1. Envia o whatsapp primeiro, (Não mexer na tela durante o envio)
             numero_wp = dados.get("whatsapp", "")
             if numero_wp:
+                self._status_var.set("● Enviando WhatsApp...")
+                self.update_idletasks()
                 # O sistema vai focar no Chrome agora
                 enviar_whatsapp(numero_wp, pdf_path, dados["aluno"])
-            
+
             # 2. SÓ DEPOIS de tentar ou enviar o Zap, mostra o aviso na tela
+            self._status_var.set("✅ Ocorrência enviada com sucesso!")
+            self.btn_gerar.configure(text="✅  PDF Gerado e Enviado!", fg_color="#0A7C3A")
             messagebox.showinfo(
                 "Sucesso! ✅",
                 f"PDF gerado e enviado com sucesso!\n\nArquivo: {pdf_path}\nEnviado para: {EMAIL_DESTINO}"
             )
-            
+            # Restaura botão após sucesso
+            self.btn_gerar.configure(text="🗃   Gerar PDF e Enviar", state="normal", fg_color=COR_PRIMARIA)
+            self._status_var.set("● Pronto para novo registro")
+
             # 3. POR ÚLTIMO, abre a pasta do Windows
             # Isso evita que a pasta do Windows não permita que o "pywhatkit" finalize o seu processo primeiro
-            os.startfile(os.path.join(os.path.expanduser("~"), "One Drive", "Documents", "Ocorrencias_JPII")) 
+            os.startfile(os.path.join(os.path.expanduser("~"), "Documents", "Ocorrencias_JPII"))
         else:
+            self.btn_gerar.configure(text="🗃   Gerar PDF e Enviar", state="normal", fg_color=COR_PRIMARIA)
+            self._status_var.set("⚠  PDF salvo, mas e-mail falhou")
             messagebox.showwarning(
                 "PDF gerado, mas e-mail falhou",
                 f"O PDF foi salvo em:\n{pdf_path}"
