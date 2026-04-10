@@ -371,7 +371,7 @@ def enviar_whatsapp(numero: str, caminho_pdf: str, aluno: str) -> bool:
         numero_limpo = numero.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
         if not numero_limpo.startswith("+"):
             numero_limpo = "+55" + numero_limpo
-        mensagem = f"Venho por meio desta mensagem, notificar que o aluno {aluno} recebeu uma ocorrência na sala de aula; verifique seu e-mail para ver a ocorrência ou aguarde o evnio do PDF."
+        mensagem = f"Venho por meio desta mensagem, notificar que o aluno {aluno} recebeu uma ocorrência na sala de aula; verifique seu e-mail para ver a ocorrência ou aguarde o envio do PDF."
         pywhatkit.sendwhatmsg_instantly(numero_limpo, mensagem, wait_time=15, tab_close=False)
         return True
     except Exception as e:
