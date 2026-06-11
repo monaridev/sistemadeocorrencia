@@ -1,4 +1,4 @@
-# Sistema de Ocorrências Escolar ( CÓDIGO PARTICULAR )
+# Sistema de Ocorrências Escolar
 > Projeto Iniciado dia 25/03/26. Finalizado dia 07/04/26
 
 # Manutenções
