@@ -24,6 +24,25 @@ O sistema foi criado para transformar um processo manual da escola em um fluxo m
 
 ---
 
+## Download da versão executável
+
+A versão pronta para uso está disponível na aba **Releases** do GitHub.
+
+➡️ **Baixe a versão mais recente:**  
+https://github.com/monaridev/sistemadeocorrencia/releases/latest
+
+Essa opção é recomendada para quem quer apenas usar o sistema, sem precisar clonar o repositório ou executar o código Python manualmente.
+
+---
+
+## Tutorial visual de uso
+
+O repositório inclui um tutorial em imagem explicando o fluxo de uso do sistema, desde o preenchimento da ocorrência até o envio e geração do PDF.
+
+![Tutorial visual de uso do Sistema de Ocorrências Escolar](tutorial.png)
+
+---
+
 ## Tecnologias utilizadas
 
 - **Python**
@@ -37,7 +56,7 @@ O sistema foi criado para transformar um processo manual da escola em um fluxo m
 
 ---
 
-## Como executar
+## Como executar pelo código-fonte
 
 ### 1. Clone o repositório
 
@@ -118,6 +137,7 @@ requirements.txt
 .env.example
 .gitignore
 ocorrenciaescolar.py
+tutorial.png
 ```
 
 O projeto atualmente está concentrado no arquivo `ocorrenciaescolar.py`, que contém a interface, a geração do PDF, o envio por e-mail e a notificação por WhatsApp.
@@ -132,9 +152,9 @@ Possíveis melhorias futuras:
 
 - separar o código em módulos;
 - adicionar tela de configurações;
-- gerar instalador com executável;
+- melhorar o tutorial visual com título maior e revisão textual;
+- adicionar print do PDF gerado;
 - adicionar banco de dados local para histórico;
-- incluir prints da interface no README;
 - criar testes para validação dos dados.
 
 ---
